@@ -10,23 +10,84 @@ function generateRandomString($length) {
     return $randomString;
 }
 
-function upload_file($fname,$tmpName,$upload_dir)
+
+function upload_file($fname, $tmpName, $upload_dir)
 {
-    $ext=pathinfo($fname, PATHINFO_EXTENSION);
-    $nfileName=generateRandomString(25).'.'."$ext";
+    $ext = pathinfo($fname, PATHINFO_EXTENSION);
+    $nfileName = generateRandomString(25) . '.' . $ext;
+    $filePath = $upload_dir . $nfileName;
 
-    $filePath = $upload_dir.$nfileName;
+    // Resize image if it's a JPEG or PNG
+    if ($ext === 'jpg' || $ext === 'jpeg' || $ext === 'png') {
+        $maxWidth = 800; // Maximum width for resized image
+        $maxHeight = 800; // Maximum height for resized image
 
-    $result = move_uploaded_file($tmpName, $filePath); //var_dump($result);
-    if (!$result)
-    {
+        // Create a new image from the uploaded file
+        if ($ext === 'jpg' || $ext === 'jpeg') {
+            $sourceImage = imagecreatefromjpeg($tmpName);
+        } elseif ($ext === 'png') {
+            $sourceImage = imagecreatefrompng($tmpName);
+        }
+
+        // Get the dimensions of the original image
+        $sourceWidth = imagesx($sourceImage);
+        $sourceHeight = imagesy($sourceImage);
+
+        // Calculate the proportional resize dimensions
+        if ($sourceWidth > $maxWidth || $sourceHeight > $maxHeight) {
+            $aspectRatio = $sourceWidth / $sourceHeight;
+
+            if ($sourceWidth > $sourceHeight) {
+                $newWidth = $maxWidth;
+                $newHeight = $maxWidth / $aspectRatio;
+            } else {
+                $newHeight = $maxHeight;
+                $newWidth = $maxHeight * $aspectRatio;
+            }
+
+            // Create a new blank image with the desired dimensions
+            $resizedImage = imagecreatetruecolor($newWidth, $newHeight);
+
+            // Resize the original image to the new dimensions
+            imagecopyresampled(
+                $resizedImage, // Destination image resource
+                $sourceImage, // Source image resource
+                0, 0, // Destination x, y coordinates
+                0, 0, // Source x, y coordinates
+                $newWidth, $newHeight, // Destination width, height
+                $sourceWidth, $sourceHeight // Source width, height
+            );
+
+            // Save the resized image to the file path
+            if ($ext === 'jpg' || $ext === 'jpeg') {
+                imagejpeg($resizedImage, $filePath, 90); // Adjust the quality (90) as needed
+            } elseif ($ext === 'png') {
+                imagepng($resizedImage, $filePath, 9); // Adjust the compression level (9) as needed
+            }
+
+            // Free up memory
+            imagedestroy($resizedImage);
+        } else {
+            // Save the original image without resizing
+            move_uploaded_file($tmpName, $filePath);
+        }
+
+        // Free up memory
+        imagedestroy($sourceImage);
+    } else {
+        // Move the file to the upload directory without resizing
+        move_uploaded_file($tmpName, $filePath);
+    }
+
+    // Return the file name if successful, otherwise return null
+    if (file_exists($filePath)) {
+        return $nfileName;
+    } else {
         return null;
     }
-    elseif($result)
-    {
-        return $nfileName;
-    }
 }
+
+
 function makeThumbnails($updir, $img,$w,$h,$fname){
     $thumbnail_width = $w;
     $thumbnail_height = $h;
