@@ -11,82 +11,25 @@ function generateRandomString($length) {
 }
 
 
-function upload_file($fname, $tmpName, $upload_dir)
+// will store the image in its original version
+function upload_file($fname,$tmpName,$upload_dir)
 {
-    $ext = pathinfo($fname, PATHINFO_EXTENSION);
-    $nfileName = generateRandomString(25) . '.' . $ext;
-    $filePath = $upload_dir . $nfileName;
+    $ext=pathinfo($fname, PATHINFO_EXTENSION);
+    // $nfileName=generateRandomString(25).'.'."$ext";
+    $nfileName = $fname;
 
-    // Resize image if it's a JPEG or PNG
-    if ($ext === 'jpg' || $ext === 'jpeg' || $ext === 'png') {
-        $maxWidth = 800; // Maximum width for resized image
-        $maxHeight = 800; // Maximum height for resized image
+    $filePath = $upload_dir.$nfileName;
 
-        // Create a new image from the uploaded file
-        if ($ext === 'jpg' || $ext === 'jpeg') {
-            $sourceImage = imagecreatefromjpeg($tmpName);
-        } elseif ($ext === 'png') {
-            $sourceImage = imagecreatefrompng($tmpName);
-        }
-
-        // Get the dimensions of the original image
-        $sourceWidth = imagesx($sourceImage);
-        $sourceHeight = imagesy($sourceImage);
-
-        // Calculate the proportional resize dimensions
-        if ($sourceWidth > $maxWidth || $sourceHeight > $maxHeight) {
-            $aspectRatio = $sourceWidth / $sourceHeight;
-
-            if ($sourceWidth > $sourceHeight) {
-                $newWidth = $maxWidth;
-                $newHeight = $maxWidth / $aspectRatio;
-            } else {
-                $newHeight = $maxHeight;
-                $newWidth = $maxHeight * $aspectRatio;
-            }
-
-            // Create a new blank image with the desired dimensions
-            $resizedImage = imagecreatetruecolor($newWidth, $newHeight);
-
-            // Resize the original image to the new dimensions
-            imagecopyresampled(
-                $resizedImage, // Destination image resource
-                $sourceImage, // Source image resource
-                0, 0, // Destination x, y coordinates
-                0, 0, // Source x, y coordinates
-                $newWidth, $newHeight, // Destination width, height
-                $sourceWidth, $sourceHeight // Source width, height
-            );
-
-            // Save the resized image to the file path
-            if ($ext === 'jpg' || $ext === 'jpeg') {
-                imagejpeg($resizedImage, $filePath, 90); // Adjust the quality (90) as needed
-            } elseif ($ext === 'png') {
-                imagepng($resizedImage, $filePath, 9); // Adjust the compression level (9) as needed
-            }
-
-            // Free up memory
-            imagedestroy($resizedImage);
-        } else {
-            // Save the original image without resizing
-            move_uploaded_file($tmpName, $filePath);
-        }
-
-        // Free up memory
-        imagedestroy($sourceImage);
-    } else {
-        // Move the file to the upload directory without resizing
-        move_uploaded_file($tmpName, $filePath);
-    }
-
-    // Return the file name if successful, otherwise return null
-    if (file_exists($filePath)) {
-        return $nfileName;
-    } else {
+    $result = move_uploaded_file($tmpName, $filePath); //var_dump($result);
+    if (!$result)
+    {
         return null;
     }
+    elseif($result)
+    {
+        return $nfileName;
+    }
 }
-
 
 function makeThumbnails($updir, $img,$w,$h,$fname){
     $thumbnail_width = $w;
@@ -165,4 +108,83 @@ function file_type($filename, $search_array)
         return 1;
     }
 }
+
+function upload_and_resize_image($fname, $tmpName, $upload_dir)
+{
+    $ext = pathinfo($fname, PATHINFO_EXTENSION);
+    $nfileName = "resized_" . $fname; // Add prefix "resized_" to the file name
+    $resizedFilePath = $upload_dir . $nfileName;
+    $originalFilePath = $upload_dir . $fname;
+
+    // Move the file to the upload directory
+    move_uploaded_file($tmpName, $originalFilePath);
+
+    // Resize image if it's a JPEG or PNG
+    if ($ext === 'jpg' || $ext === 'jpeg' || $ext === 'png') {
+        $maxWidth = 800; // Maximum width for resized image
+        $maxHeight = 800; // Maximum height for resized image
+
+        // Create a new image from the uploaded file
+        if ($ext === 'jpg' || $ext === 'jpeg') {
+            $sourceImage = imagecreatefromjpeg($originalFilePath);
+        } elseif ($ext === 'png') {
+            $sourceImage = imagecreatefrompng($originalFilePath);
+        }
+
+        // Get the dimensions of the original image
+        $sourceWidth = imagesx($sourceImage);
+        $sourceHeight = imagesy($sourceImage);
+
+        // Calculate the proportional resize dimensions
+        if ($sourceWidth > $maxWidth || $sourceHeight > $maxHeight) {
+            $aspectRatio = $sourceWidth / $sourceHeight;
+
+            if ($sourceWidth > $sourceHeight) {
+                $newWidth = $maxWidth;
+                $newHeight = $maxWidth / $aspectRatio;
+            } else {
+                $newHeight = $maxHeight;
+                $newWidth = $maxHeight * $aspectRatio;
+            }
+
+            // Create a new blank image with the desired dimensions
+            $resizedImage = imagecreatetruecolor($newWidth, $newHeight);
+
+            // Resize the original image to the new dimensions
+            imagecopyresampled(
+                $resizedImage, // Destination image resource
+                $sourceImage, // Source image resource
+                0, 0, // Destination x, y coordinates
+                0, 0, // Source x, y coordinates
+                $newWidth, $newHeight, // Destination width, height
+                $sourceWidth, $sourceHeight // Source width, height
+            );
+
+            // Save the resized image to the file path
+            if ($ext === 'jpg' || $ext === 'jpeg') {
+                imagejpeg($resizedImage, $resizedFilePath, 90); // Adjust the quality (90) as needed
+            } elseif ($ext === 'png') {
+                imagepng($resizedImage, $resizedFilePath, 9); // Adjust the compression level (9) as needed
+            }
+
+            // Free up memory
+            imagedestroy($resizedImage);
+        }
+
+        // Free up memory
+        imagedestroy($sourceImage);
+    }
+
+    // Check if both files exist and return the file names if successful, otherwise return null
+    if (file_exists($resizedFilePath) && file_exists($originalFilePath)) {
+        return array(
+            'resized' => $nfileName,
+            'original' => $fname
+        );
+    } else {
+        return null;
+    }
+}
+
+
 ?>

@@ -15,14 +15,21 @@ include('../functions/helpers.php');
 $file_data = file_get_contents('php://input');
 
 // Decode the file data as JSON
-$file_info = json_decode($file_data);
+$original_file_info = json_decode($file_data);
 
-// $name = $_POST['name'];
-$file_info = $_FILES['file_'];
-$file_name = $file_info['name'];
-$file_size = $file_info['size'];
-$file_tmp = $file_info['tmp_name'];
-$make_thumbnail = $_POST['make_thumbnail'];
+$original_file_info = $_FILES['file_'];
+$file_name = $original_file_info['name'];
+$file_size = $original_file_info['size'];
+$file_tmp = $original_file_info['tmp_name'];
+$file_name2 = $file_name;
+$file_tmp2 = $file_tmp;
+
+
+$thumb_info = $_FILES['thumb_'] ?? 0;
+if($thumb_info !== 0){
+    $thumb_name = $thumb_info['name'];
+    $thumb_tmp = $thumb_info['tmp_name'];
+}
 
 $allowed_formats_array = ['jpg','jpeg','png'];
 $allowed_formats = 'jpg, jpeg and png';
@@ -37,25 +44,66 @@ if ($file_size > 100) {
     exit();
 }
 
+// uploads directory
 $upload_dest = '../uploads_/';
 
-// Upload the file
-$upload = upload_file($file_name, $file_tmp, $upload_dest);
+// Upload original file
+$or_file_upload = upload_and_resize_image($file_name, $file_tmp, $upload_dest);
 
-// Check if the upload was successful
-if ($upload == null) {
+// Check if the original file upload was successful
+if ($or_file_upload == null) {
     // Error uploading file
     echo json_encode(['payload' => '', 'message' => 'Upload Failed. Please retry!']);
     exit();
 }
 
-// Get the file name only
-$file_name_only = pathinfo($upload, PATHINFO_FILENAME);
-if($make_thumbnail == 1){
-    // Create the thumbnail
-   makeThumbnails($upload_dest, $upload, 100, 100, 'thumb_' . $file_name_only);
+// Upload the thumb file
+if($thumb_info !== 0){
+    $thumb_upload = upload_file($thumb_name, $thumb_tmp, $upload_dest);
+
+    // Check if the thumb file upload was successful
+    if ($thumb_upload == null) {
+        // Error uploading file
+        echo json_encode(['payload' => '', 'message' => 'File thumb upload Failed. Please retry!']);
+        exit();
+    }
 }
 
-echo json_encode(['payload' => $upload, 'message' => 'Upload Okay! Submit Now', 'filename' => $file_name]);
+
+
+// Get the file name only
+// $file_name_only = pathinfo($upload, PATHINFO_FILENAME);
+// if($make_thumbnail == 1){
+//     // Create the thumbnail
+//    try{
+//     makeThumbnails($upload_dest, $upload, 100, 100, 'thumb_' . $file_name_only);
+//    }catch(Exception $e){
+//     echo $e->getMessage();
+//     exit(json_encode(['payload' => '', 'message' => 'Upload Failed. Please retry!']));
+//    }
+   
+// }
+// resize the image to have an optimized version for faster load on webpage
+// $file_name_only = pathinfo($o_file_upload, PATHINFO_FILENAME);
+// $resized_file_upload = upload_and_resize_image($file_name, );
+// if($resized_file_upload == null){
+//     exit(json_encode(['payload' => '', 'message' => 'File thumb upload failed. Please retry!']));
+// }
+
+// Get the file name only
+// $file_name_only = pathinfo($upload, PATHINFO_FILENAME);
+// if($make_thumbnail == 1){
+//     // Create the thumbnail
+//    try{
+//     makeThumbnails($upload_dest, $upload, 100, 100, 'thumb_' . $file_name_only);
+//    }catch(Exception $e){
+//     echo $e->getMessage();
+//     exit(json_encode(['payload' => '', 'message' => 'Upload Failed. Please retry!']));
+//    }
+   
+// }
+
+// return a uploaded file name alongside success message
+echo json_encode(['payload' => $or_file_upload, 'message' => 'Upload Okay! Submit Now', 'filename' => $file_name]);
 
 ?>
