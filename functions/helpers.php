@@ -109,7 +109,7 @@ function file_type($filename, $search_array)
     }
 }
 
-function upload_and_resize_image($fname, $tmpName, $upload_dir)
+function upload_and_resize_image($fname, $tmpName, $upload_dir, $w = 800, $h = 800)
 {
     $ext = pathinfo($fname, PATHINFO_EXTENSION);
     $nfileName = "resized_" . $fname; // Add prefix "resized_" to the file name
@@ -121,8 +121,8 @@ function upload_and_resize_image($fname, $tmpName, $upload_dir)
 
     // Resize image if it's a JPEG or PNG
     if ($ext === 'jpg' || $ext === 'jpeg' || $ext === 'png') {
-        $maxWidth = 800; // Maximum width for resized image
-        $maxHeight = 800; // Maximum height for resized image
+        $maxWidth = $w; // Maximum width for resized image
+        $maxHeight = $h; // Maximum height for resized image
 
         // Create a new image from the uploaded file
         if ($ext === 'jpg' || $ext === 'jpeg') {
