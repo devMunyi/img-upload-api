@@ -1,12 +1,37 @@
 <?php
 
-// // Headers
-header('Access-Control-Allow-Origin: *');
-// header('Content-Type: application/json');
-// header('Access-Control-Allow-Methods: POST');
-// // header(
-// //     'Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Methods, Authorization, X-Requested-With'
-// // );
+error_reporting(E_ALL & ~E_NOTICE & ~E_STRICT & ~E_DEPRECATED & ~E_WARNING);
+
+// allowed origins
+include_once ("./allowed-ips-or-origins.php");
+
+// Check the request method  
+$requestMethod = $_SERVER['REQUEST_METHOD'];
+
+// Check the 'Host' header to determine the origin
+$origin =  $_SERVER['REMOTE_ADDR'];
+
+if ($requestMethod != 'POST') {
+    http_response_code(404);
+    exit;
+}
+
+if (in_array($origin, $allowedOrigins)) {
+    header("Access-Control-Allow-Origin: " . $origin);
+
+    // Only set Access-Control-Allow-Methods for POST requests
+    if ($requestMethod === 'POST') {
+        header("Access-Control-Allow-Methods: $requestMethod");
+    }
+
+    // header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
+    // header("Content-Type: application/json; charset=UTF-8");
+} else {
+    // echo "origin => $origin";
+    http_response_code(403);
+    exit;
+}
+
 
 // Include the functions
 include('../functions/helpers.php');
@@ -36,12 +61,10 @@ $allowed_formats = 'jpg, jpeg and png';
 
 if ($file_size > 100) {
     if ((file_type($file_name, $allowed_formats_array)) == 0) {
-        echo json_encode(['payload' => '', 'message' => "This file format is not allowed. Only $allowed_formats"]);
-        exit();
+        exit(json_encode(['payload' => '', 'message' => "This file format is not allowed. Only $allowed_formats"]));
     }
 } else {
-    echo json_encode(['payload' => '', 'message' => 'File not attached or has invalid size']);
-    exit();
+    exit(json_encode(['payload' => '', 'message' => 'File not attached or has invalid size']));
 }
 
 // uploads directory
@@ -53,8 +76,7 @@ $or_file_upload = upload_and_resize_image($file_name, $file_tmp, $upload_dest);
 // Check if the original file upload was successful
 if ($or_file_upload == null) {
     // Error uploading file
-    echo json_encode(['payload' => '', 'message' => 'Upload Failed. Please retry!']);
-    exit();
+    exit(json_encode(['payload' => '', 'message' => 'Upload Failed. Please retry!']));
 }
 
 // Upload the thumb file
@@ -64,8 +86,7 @@ if($thumb_info !== 0){
     // Check if the thumb file upload was successful
     if ($thumb_upload == null) {
         // Error uploading file
-        echo json_encode(['payload' => '', 'message' => 'File thumb upload Failed. Please retry!']);
-        exit();
+        exit(json_encode(['payload' => '', 'message' => 'File thumb upload Failed. Please retry!']));
     }
 }
 
@@ -104,6 +125,6 @@ if($thumb_info !== 0){
 // }
 
 // return a uploaded file name alongside success message
-echo json_encode(['payload' => $or_file_upload, 'message' => 'Upload Okay! Submit Now', 'filename' => $file_name]);
+exit(json_encode(['payload' => $or_file_upload, 'message' => 'Upload Okay! Submit Now', 'filename' => $file_name]));
 
 ?>
